@@ -342,7 +342,7 @@ CANDIDATES = [
 ]
 
 # ── Gemini client ──────────────────────────────────────────────────────────────
-GEMINI_API_KEY = "AIzaSyB7_e7yD91WgKhR8qSBsf7BJ2435itRvC0"
+GEMINI_API_KEY = "AIzaSyCJPHEkVj1oKer9MOu7B9uFP6kCxSyTU-M"
 
 @st.cache_resource
 def get_model():
