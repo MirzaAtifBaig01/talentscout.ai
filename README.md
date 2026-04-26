@@ -8,7 +8,7 @@ TalentScout AI is an end-to-end recruiting agent that takes a Job Description as
 
 ## 🚀 Live Demo
 
-**Deployed URL:** `[your-app-name].streamlit.app`  
+**Deployed URL:** `https://talentscoutai-4zbvcm5wt95zjbwdwi2t6g.streamlit.app/`  
 **Demo Video:** `[YouTube / Loom link]`
 
 ---
