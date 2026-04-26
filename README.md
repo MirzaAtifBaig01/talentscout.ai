@@ -1,6 +1,6 @@
 # 🎯 TalentScout AI — AI-Powered Talent Scouting & Engagement Agent
 
-> **Deccan AI Hackathon 2025 Submission**
+> **Deccan AI Hackathon 2026 Submission**
 
 TalentScout AI is an end-to-end recruiting agent that takes a Job Description as input, discovers matching candidates, simulates personalised conversational outreach, and outputs a ranked shortlist scored on two dimensions: **Match Score** and **Interest Score**.
 
