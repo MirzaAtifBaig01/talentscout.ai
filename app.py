@@ -4,7 +4,7 @@ import time
 import random
 import re
 import os
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 
 # ── Page config ────────────────────────────────────────────────────────────────
@@ -341,28 +341,35 @@ CANDIDATES = [
     {"name":"Ananya Singh","skills":["React","Python","Flask","MongoDB","Machine Learning"],"experience":2,"location":"Bangalore","summary":"Full-stack developer with growing ML interest. Built 3 end-to-end AI-powered web applications."},
 ]
 
-# ── Claude client ──────────────────────────────────────────────────────────────
+# ── Gemini client ──────────────────────────────────────────────────────────────
+GEMINI_API_KEY = "AIzaSyB7_e7yD91WgKhR8qSBsf7BJ2435itRvC0"
+
 @st.cache_resource
-def get_client():
-    api_key = os.environ.get("ANTHROPIC_API_KEY", st.secrets.get("ANTHROPIC_API_KEY", ""))
-    return anthropic.Anthropic(api_key=api_key)
+def get_model():
+    genai.configure(api_key=GEMINI_API_KEY)
+    return genai.GenerativeModel(
+        model_name="gemini-2.5-flash-lite",
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.7,
+            response_mime_type="application/json",
+        ),
+    )
 
 # ── AI functions ───────────────────────────────────────────────────────────────
 def parse_jd_with_ai(jd_text: str) -> dict:
-    client = get_client()
-    resp = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=600,
-        system="""Extract structured data from job descriptions. Respond ONLY with valid JSON, no markdown fences.
-Schema: {"required_skills":[],"nice_to_have_skills":[],"min_experience":0,"role_title":"","key_responsibilities":[]}""",
-        messages=[{"role":"user","content":f"Parse this JD:\n\n{jd_text}"}]
-    )
-    text = resp.content[0].text.strip()
+    model = get_model()
+    prompt = f"""Extract structured data from this job description. Respond ONLY with valid JSON.
+Schema: {{"required_skills":[],"nice_to_have_skills":[],"min_experience":0,"role_title":"","key_responsibilities":[]}}
+
+Job Description:
+{jd_text}"""
+    resp = model.generate_content(prompt)
+    text = resp.text.strip()
     text = re.sub(r"```json|```","",text).strip()
     return json.loads(text)
 
 def compute_match_score_ai(jd_text: str, parsed_jd: dict, candidate: dict) -> dict:
-    client = get_client()
+    model = get_model()
     prompt = f"""Score this candidate against the job description.
 
 JD Summary: {jd_text[:400]}
@@ -376,18 +383,14 @@ Experience: {candidate['experience']} years
 Location: {candidate['location']}
 Summary: {candidate['summary']}
 
-Respond ONLY with valid JSON, no markdown:
+Respond ONLY with valid JSON:
 {{"match_score":0-100,"matched_skills":[],"missing_skills":[],"experience_fit":"strong/partial/weak","one_line_reason":""}}"""
-    resp = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=300,
-        messages=[{"role":"user","content":prompt}]
-    )
-    text = re.sub(r"```json|```","",resp.content[0].text).strip()
+    resp = model.generate_content(prompt)
+    text = re.sub(r"```json|```","",resp.text).strip()
     return json.loads(text)
 
 def simulate_conversation_ai(jd_text: str, candidate: dict, match_score: int) -> dict:
-    client = get_client()
+    model = get_model()
     prompt = f"""You are simulating a job candidate receiving a recruiter outreach message.
 
 The recruiter reached out about this role: {jd_text[:300]}
@@ -401,14 +404,10 @@ Simulate a realistic 2-turn conversation:
 
 Then give an interest score 0-100 based on the reply.
 
-Respond ONLY with valid JSON, no markdown:
+Respond ONLY with valid JSON:
 {{"recruiter_message":"","candidate_reply":"","interest_score":0-100,"interest_label":"Hot/Warm/Neutral/Not interested"}}"""
-    resp = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=500,
-        messages=[{"role":"user","content":prompt}]
-    )
-    text = re.sub(r"```json|```","",resp.content[0].text).strip()
+    resp = model.generate_content(prompt)
+    text = re.sub(r"```json|```","",resp.text).strip()
     return json.loads(text)
 
 # ── Score bar HTML ─────────────────────────────────────────────────────────────
@@ -438,7 +437,7 @@ st.markdown("""
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Candidates in DB", len(CANDIDATES))
 c2.metric("Scoring Dimensions", "2 (Match + Interest)")
-c3.metric("AI Model", "Claude Sonnet 4")
+c3.metric("AI Model", "Gemini 2.5 Flash Lite")
 c4.metric("Explainability", "✓ Full")
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -640,5 +639,5 @@ elif run:
 # ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="text-align:center;padding:3rem 0 1rem;color:var(--muted);font-size:0.8rem;font-family:'DM Mono',monospace;">
-  TalentScout AI &nbsp;·&nbsp; Built with Claude Sonnet 4 &nbsp;·&nbsp; Deccan AI Hackathon 2025
+  TalentScout AI &nbsp;·&nbsp; Built with Gemini 2.5 Flash Lite &nbsp;·&nbsp; Deccan AI Hackathon 2025
 </div>""", unsafe_allow_html=True)
